@@ -1,0 +1,165 @@
+{
+  "portfolio_metadata": {
+    "market": "TSEC",
+    "currency": "TWD",
+    "last_updated": "2026-03-06"
+  },
+  "holdings": [
+    {
+      "symbol": "0056.TW",
+      "name": "元大高股息",
+      "shares": 3948,
+      "entry_price": 36.8629
+    },
+    {
+      "symbol": "00713.TW",
+      "name": "元大台灣高息低波",
+      "shares": 2060,
+      "entry_price": 52.0864
+    },
+    {
+      "symbol": "00720B.TWO",
+      "name": "元大投資級公司債",
+      "shares": 5000,
+      "entry_price": 35.7684
+    },
+    {
+      "symbol": "00878.TW",
+      "name": "國泰永續高股息",
+      "shares": 3000,
+      "entry_price": 20.6147
+    },
+    {
+      "symbol": "00888.TWO",
+      "name": "永豐台灣ESG",
+      "shares": 3000,
+      "entry_price": 13.4913
+    },
+    {
+      "symbol": "00891.TW",
+      "name": "中信關鍵半導體",
+      "shares": 5000,
+      "entry_price": 16.976
+    },
+    {
+      "symbol": "00900.TW",
+      "name": "富邦特選高股息30",
+      "shares": 5000,
+      "entry_price": 13.6374
+    },
+    {
+      "symbol": "00904.TW",
+      "name": "新光臺灣半導體30",
+      "shares": 3000,
+      "entry_price": 12.461
+    },
+    {
+      "symbol": "00915.TW",
+      "name": "凱基優選高股息30",
+      "shares": 5000,
+      "entry_price": 22.2368
+    },
+    {
+      "symbol": "00919.TW",
+      "name": "群益台灣精選高息",
+      "shares": 3000,
+      "entry_price": 21.619
+    },
+    {
+      "symbol": "00929.TW",
+      "name": "復華台灣科技優息",
+      "shares": 5000,
+      "entry_price": 18.1294
+    },
+    {
+      "symbol": "00940.TW",
+      "name": "元大台灣價值高息",
+      "shares": 20000,
+      "entry_price": 9.7927
+    },
+    {
+      "symbol": "00944.TW",
+      "name": "野村趨勢強勢高息",
+      "shares": 10000,
+      "entry_price": 14.3976
+    },
+    {
+      "symbol": "00945B.TW",
+      "name": "凱基美國非投等債",
+      "shares": 15000,
+      "entry_price": 14.8252
+    },
+    {
+      "symbol": "2603.TW",
+      "name": "長榮",
+      "shares": 400,
+      "entry_price": 317.77
+    },
+    {
+      "symbol": "1453.TW",
+      "name": "大將",
+      "shares": 8547,
+      "entry_price": 24.4707
+    },
+    {
+      "symbol": "2520.TW",
+      "name": "冠德",
+      "shares": 2200,
+      "entry_price": 60.5515
+    },
+    {
+      "symbol": "5291.TWO",
+      "name": "邑昇",
+      "shares": 1000,
+      "entry_price": 44.337
+    },
+    {
+      "symbol": "6190.TWO",
+      "name": "萬泰科",
+      "shares": 2000,
+      "entry_price": 56.0475
+    },
+    {
+      "symbol": "3231.TW",
+      "name": "緯創",
+      "shares": 2000,
+      "entry_price": 109.3425
+    },
+    {
+      "symbol": "1711.TW",
+      "name": "永光",
+      "shares": 3000,
+      "entry_price": 25.4213
+    },
+    {
+      "symbol": "2501.TW",
+      "name": "國建",
+      "shares": 2000,
+      "entry_price": 28.874
+    },
+    {
+      "symbol": "2353.TW",
+      "name": "宏碁",
+      "shares": 2000,
+      "entry_price": 47.8405
+    },
+    {
+      "symbol": "3481.TW",
+      "name": "群創",
+      "shares": 3000,
+      "entry_price": 17.0538
+    },
+    {
+      "symbol": "6127.TWO",
+      "name": "九豪",
+      "shares": 2000.0,
+      "entry_price": 40.234
+    },
+    {
+      "symbol": "8110.TWO",
+      "name": "華東",
+      "shares": 1000.0,
+      "entry_price": 53.045
+    }
+  ]
+}

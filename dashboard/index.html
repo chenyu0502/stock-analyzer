@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>持股儀表板 · Antigravity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-icon">📊</span>
+        <span class="logo-text">Antigravity <span class="logo-sub">Dashboard</span></span>
+      </div>
+      <div class="session-badge" id="sessionBadge">—</div>
+    </div>
+    <div class="header-right">
+      <span class="update-label">最後更新</span>
+      <span class="update-time" id="lastUpdated">載入中...</span>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadReport()">
+        <span id="refreshIcon">↻</span> 重新整理
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Summary Cards ─────────────────────────────────────── -->
+  <main class="main">
+    <section class="summary-grid" id="summaryGrid">
+      <div class="summary-card" id="cardValue">
+        <div class="card-label">當前市值</div>
+        <div class="card-value" id="totalValue">—</div>
+        <div class="card-sub" id="totalCost">成本：—</div>
+      </div>
+      <div class="summary-card" id="cardUnrealized">
+        <div class="card-label">累積損益</div>
+        <div class="card-value" id="unrealizedPnl">—</div>
+        <div class="card-sub" id="unrealizedPct">—</div>
+      </div>
+      <div class="summary-card" id="cardToday">
+        <div class="card-label">今日損益</div>
+        <div class="card-value" id="todayPnl">—</div>
+        <div class="card-sub" id="coveredSymbols">—</div>
+      </div>
+    </section>
+
+    <!-- ── Top Movers ─────────────────────────────────────── -->
+    <section class="two-col">
+      <div class="panel">
+        <h2 class="panel-title">🚀 今日漲幅最大</h2>
+        <ul class="mover-list" id="topGainersList"></ul>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">📉 今日跌幅最大</h2>
+        <ul class="mover-list" id="topLosersList"></ul>
+      </div>
+    </section>
+
+    <!-- ── Holdings Table ─────────────────────────────────── -->
+    <section class="panel full-width">
+      <h2 class="panel-title">📈 持股概況</h2>
+      <div class="table-scroll">
+        <table class="holdings-table" id="holdingsTable">
+          <thead>
+            <tr>
+              <th>代號</th>
+              <th>名稱</th>
+              <th class="num">收盤價</th>
+              <th class="num">今日漲跌</th>
+              <th class="num">今日損益</th>
+              <th class="num">持股 (張)</th>
+              <th class="num">市值 (TWD)</th>
+              <th class="num">累積損益</th>
+              <th class="num">損益%</th>
+              <th>操作建議</th>
+            </tr>
+          </thead>
+          <tbody id="holdingsTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── News ───────────────────────────────────────────── -->
+    <section class="panel full-width">
+      <h2 class="panel-title">📰 今日必讀新聞 Top 3</h2>
+      <div id="newsList" class="news-list"></div>
+      <div id="noNews" class="no-data" style="display:none">暫無新聞資料</div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="footer">
+    <span>⚡ Antigravity AI · 資料來源：Yahoo Finance / Google News</span>
+    <span id="autoRefreshCountdown"></span>
+  </footer>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

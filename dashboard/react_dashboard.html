@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Portfolio Dashboard</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        appBg: '#0b0e1a',
+                        glassBg: 'rgba(255, 255, 255, 0.03)',
+                        glassBorder: 'rgba(255, 255, 255, 0.08)',
+                        accent: '#6366f1',
+                        accentLight: '#818cf8',
+                        bullish: '#ef4444',
+                        bearish: '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- CSS reset and custom base styles for glassmorphism -->
+    <style>
+        body {
+            background-color: #0b0e1a;
+            background-image: radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.06), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.05), transparent 25%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Custom Scrollbar for sleek UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-card {
+            background: var(--glassBg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glassBorder);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #818cf8;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Recharts + Prop-types -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body class="antialiased">
+    <div id="root"></div>
+
+    <!-- React Application Code -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } = window.Recharts;
+
+        // --- Format Helpers ---
+        const fmt = (n, dec = 0) => {
+            if (n == null) return 'N/A';
+            return n.toLocaleString('zh-TW', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+        };
+
+        const pnlColor = (val) => {
+            if (val == null || val === 0) return 'text-slate-400';
+            return val > 0 ? 'text-bullish' : 'text-bearish';
+        };
+
+        const pnlSign = (val) => (val > 0 ? '+' : '');
+
+        // --- Icons (Heroicons SVG) ---
+        const Icons = {
+            TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" /></svg>,
+            TrendingDown: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clipRule="evenodd" /></svg>,
+            Activity: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>,
+            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+            Newspaper: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" /></svg>,
+            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>,
+            Pencil: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+        };
+
+        // --- Components ---
+        const SummaryCard = ({ title, value, subtext, icon, valueColor = "text-white" }) => (
+            <div className="glass-card rounded-xl p-6 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-accentLight opacity-70"></div>
+                <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
+                    <div className="p-2 bg-slate-800/50 rounded-lg text-accentLight group-hover:scale-110 transition-transform">
+                        {icon}
+                    </div>
+                </div>
+                <div className={`text-3xl font-mono font-bold mb-2 ${valueColor}`}>
+                    {value}
+                </div>
+                <div className="text-sm text-slate-500">
+                    {subtext}
+                </div>
+            </div>
+        );
+
+        const Badge = ({ pct }) => {
+            if (pct == null) return <span className="px-2 py-1 rounded bg-slate-800 text-slate-400 text-xs font-mono">N/A</span>;
+            const isUp = pct > 0;
+            const isDown = pct < 0;
+            return (
+                <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${isUp ? 'bg-bullish/10 text-bullish' : isDown ? 'bg-bearish/10 text-bearish' : 'bg-slate-800 text-slate-400'
+                    }`}>
+                    {pnlSign(pct)}{pct.toFixed(2)}%
+                </span>
+            );
+        };
+
+        const AddStockModal = ({ show, onHide, onSave, addSymbol, setAddSymbol, addShares, setAddShares, addPrice, setAddPrice, isSubmitting }) => {
+            if (!show) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="glass-card w-full max-w-md rounded-2xl p-6 relative">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                            {addSymbol ? <Icons.Pencil /> : <Icons.Plus />} {addSymbol ? '編輯個股持股資訊' : '新增股票到我的持股'}
+                        </h2>
+                        <form onSubmit={onSave} className="flex flex-col gap-4">
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-1">股票代號 (如 2330.TW)</label>
+                                <input required type="text" value={addSymbol} onChange={e => setAddSymbol(e.target.value)}
+                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                                    placeholder="例如: 2330.TW" />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-1">總股數</label>
+                                <input required type="number" step="1" min="1" value={addShares} onChange={e => setAddShares(e.target.value)}
+                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                                    placeholder="例如: 1000" />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-1">平均購入價格</label>
+                                <input required type="number" step="0.0001" min="0" value={addPrice} onChange={e => setAddPrice(e.target.value)}
+                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                                    placeholder="例如: 150.5" />
+                            </div>
+                            <div className="flex justify-end gap-3 mt-4">
+                                <button type="button" onClick={onHide} className="px-5 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all font-medium">
+                                    取消
+                                </button>
+                                <button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg bg-accent hover:bg-accentLight text-white transition-all font-medium disabled:opacity-50 flex items-center gap-2">
+                                    {isSubmitting ? <><div className="spinner w-4 h-4 border-2"></div><span>儲存中...</span></> : '確認儲存'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastUpdated, setLastUpdated] = useState(null);
+            
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [addSymbol, setAddSymbol] = useState('');
+            const [addShares, setAddShares] = useState('');
+            const [addPrice, setAddPrice] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleEditClick = (h) => {
+                setAddSymbol(h.symbol);
+                setAddShares(h.shares.toString());
+                setAddPrice(h.entry_price.toString());
+                setShowAddModal(true);
+            };
+
+            const handleAddStock = async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                try {
+                    const payload = {
+                        symbol: addSymbol,
+                        shares: parseFloat(addShares),
+                        price: parseFloat(addPrice)
+                    };
+
+                    // Step 1: POST saves stock + fetches single quote (~2-3 sec)
+                    const res = await fetch('/api/stocks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || '新增/修改失敗');
+                    }
+
+                    const result = await res.json();
+
+                    // Step 2: Immediately merge the returned quote into current data
+                    if (result.quote && result.quote.current_price != null && data) {
+                        setData(prev => {
+                            if (!prev) return prev;
+                            const newHoldings = [...prev.holdings];
+                            const existingIdx = newHoldings.findIndex(h => h.symbol === result.quote.symbol);
+                            if (existingIdx >= 0) {
+                                newHoldings[existingIdx] = result.quote;
+                            } else {
+                                newHoldings.push(result.quote);
+                            }
+                            // Recalculate summary
+                            const valid = newHoldings.filter(h => h.market_value != null);
+                            const totalCost = newHoldings.reduce((s, h) => s + (h.cost_basis || 0), 0);
+                            const totalValue = valid.reduce((s, h) => s + (h.market_value || 0), 0);
+                            const totalUnrealized = valid.reduce((s, h) => s + (h.unrealized_pnl || 0), 0);
+                            const todayPnl = valid.reduce((s, h) => s + (h.today_pnl || 0), 0);
+                            return {
+                                ...prev,
+                                holdings: newHoldings,
+                                summary: {
+                                    ...prev.summary,
+                                    total_cost_basis: Math.round(totalCost),
+                                    total_market_value: Math.round(totalValue),
+                                    total_unrealized_pnl: Math.round(totalUnrealized),
+                                    total_unrealized_pct: totalCost ? +(totalUnrealized / totalCost * 100).toFixed(2) : 0,
+                                    today_total_pnl: Math.round(todayPnl),
+                                    covered_symbols: valid.length,
+                                    total_symbols: newHoldings.length,
+                                }
+                            };
+                        });
+                    }
+
+                    // Close modal
+                    setShowAddModal(false);
+                    setAddSymbol('');
+                    setAddShares('');
+                    setAddPrice('');
+
+                    // Step 3: Background full refresh (non-blocking)
+                    fetch(`/api/refresh?t=${Date.now()}`).then(() => fetchData()).catch(() => {});
+
+                } catch (err) {
+                    alert(err.message);
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            const handleDeleteStock = async (symbol) => {
+                if (!window.confirm(`確定要刪除 ${symbol} 嗎？`)) return;
+                try {
+                    const res = await fetch('/api/stocks', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ symbol })
+                    });
+                    if (!res.ok) throw new Error('刪除失敗');
+                    
+                    await fetch(`/api/refresh?t=${Date.now()}`);
+                    await fetchData();
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+
+            const fetchData = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const res = await fetch(`../reports/latest.json?t=${Date.now()}`);
+                    if (!res.ok) throw new Error('Data not found. Run analyze_portfolio.py first.');
+                    const jsonData = await res.json();
+                    setData(jsonData);
+                    setLastUpdated(new Date().toLocaleTimeString());
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 60000);
+                return () => clearInterval(interval);
+            }, []);
+
+            // Prepare Chart Data
+            const pieData = useMemo(() => {
+                if (!data || !data.holdings) return [];
+                // Group by value > 0, take top 6, group rest as "Others"
+                let valid = data.holdings.filter(h => h.market_value > 0).sort((a, b) => b.market_value - a.market_value);
+                let top = valid.slice(0, 6).map(h => ({ name: h.symbol, value: h.market_value }));
+                let rest = valid.slice(6).reduce((acc, curr) => acc + curr.market_value, 0);
+                if (rest > 0) top.push({ name: '其他', value: rest });
+                return top;
+            }, [data]);
+
+            const COLORS = ['#6366f1', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b', '#10b981', '#64748b'];
+
+            if (error) {
+                return (
+                    <div className="flex h-screen items-center justify-center p-6">
+                        <div className="glass-card max-w-md w-full p-8 text-center rounded-2xl">
+                            <div className="text-bearish mx-auto w-16 h-16 mb-4">
+                                <Icons.TrendingDown />
+                            </div>
+                            <h2 className="text-xl font-bold mb-2">載入失敗</h2>
+                            <p className="text-slate-400 mb-6">{error}</p>
+                            <button onClick={fetchData} className="px-6 py-2 bg-accent hover:bg-accentLight text-white rounded-lg transition-colors font-medium">重試</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!data && loading) {
+                return (
+                    <div className="flex h-screen items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="spinner"></div>
+                            <div className="text-slate-400 font-medium tracking-widest text-sm">載入中...</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!data) return null;
+
+            const { summary, holdings, top_news } = data;
+
+            return (
+                <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+                    <AddStockModal 
+                        show={showAddModal}
+                        onHide={() => setShowAddModal(false)}
+                        onSave={handleAddStock}
+                        addSymbol={addSymbol}
+                        setAddSymbol={setAddSymbol}
+                        addShares={addShares}
+                        setAddShares={setAddShares}
+                        addPrice={addPrice}
+                        setAddPrice={setAddPrice}
+                        isSubmitting={isSubmitting}
+                    />
+                    {/* Header */}
+                    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 border-b border-glassBorder pb-6">
+                        <div>
+                            <h1 className="text-2xl font-bold flex items-center gap-3">
+                                <span className="text-xl">📊</span>
+                                Antigravity <span className="font-light text-slate-400">Dashboard</span>
+                            </h1>
+                            <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                                資料更新時間: <span className="font-mono text-slate-300">{data.generated_at}</span>
+                                <span className="px-2 py-0.5 rounded-full bg-accent/20 text-accentLight text-xs border border-accent/30">{data.session}</span>
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/20 border border-accent/50 hover:bg-accent/40 text-accentLight transition-all text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent"
+                            >
+                                <Icons.Plus /> 新增股票
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    try {
+                                        await fetch(`/api/refresh?t=${Date.now()}`);
+                                        await fetchData();
+                                    } catch (err) {
+                                        setError(err.message);
+                                        setLoading(false);
+                                    }
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-glassBg border border-glassBorder hover:bg-white/5 hover:border-accent/50 text-slate-300 transition-all text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent"
+                                disabled={loading}
+                            >
+                                <Icons.Refresh /> {loading ? '處理中...' : '強制重整'}
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Overview KPI Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <SummaryCard
+                            title="當前總市值"
+                            value={`$${fmt(summary.total_market_value)}`}
+                            subtext={<>總成本: <span className="font-mono">${fmt(summary.total_cost_basis)}</span></>}
+                            icon={<Icons.Activity />}
+                        />
+                        <SummaryCard
+                            title="累積損益"
+                            value={<>{pnlSign(summary.total_unrealized_pnl)}${fmt(Math.abs(summary.total_unrealized_pnl))}</>}
+                            valueColor={pnlColor(summary.total_unrealized_pnl)}
+                            subtext={<>報酬率: <span className={`font-mono font-bold ${pnlColor(summary.total_unrealized_pct)}`}>{pnlSign(summary.total_unrealized_pct)}{summary.total_unrealized_pct?.toFixed(2)}%</span></>}
+                            icon={<Icons.TrendingUp />}
+                        />
+                        <SummaryCard
+                            title="今日損益變化"
+                            value={<>{pnlSign(summary.today_total_pnl)}${fmt(Math.abs(summary.today_total_pnl))}</>}
+                            valueColor={pnlColor(summary.today_total_pnl)}
+                            subtext={`已取得資料: ${summary.covered_symbols} / ${summary.total_symbols} 檔`}
+                            icon={<Icons.TrendingDown />}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        {/* Left Column: Data Table */}
+                        <div className="xl:col-span-2 flex flex-col gap-6">
+                            <div className="glass-card rounded-xl p-6">
+                                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <span className="text-xl">📈</span> 持股明細
+                                </h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm whitespace-nowrap">
+                                        <thead>
+                                            <tr className="border-b border-glassBorder text-slate-400 font-semibold uppercase tracking-wider text-xs">
+                                                <th className="pb-3 pl-2">代號</th>
+                                                <th className="pb-3 text-right">收盤價</th>
+                                                <th className="pb-3 text-right">漲跌幅</th>
+                                                <th className="pb-3 text-right">今日損益</th>
+                                                <th className="pb-3 text-right">總市值</th>
+                                                <th className="pb-3 text-right">累積損益</th>
+                                                <th className="pb-3 text-center w-12 pr-2">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {holdings.map((h, i) => (
+                                                <tr key={h.symbol} className="border-b border-glassBorder/30 hover:bg-white/[0.02] transition-colors group">
+                                                    <td className="py-4 pl-2">
+                                                        <div className="font-mono text-accentLight font-bold text-xs">{h.symbol}</div>
+                                                        <div className="text-slate-300 font-medium">{h.name}</div>
+                                                    </td>
+                                                    <td className="py-4 text-right font-mono">
+                                                        {fmt(h.current_price, 2)}
+                                                    </td>
+                                                    <td className="py-4 text-right">
+                                                        <Badge pct={h.change_pct} />
+                                                    </td>
+                                                    <td className={`py-4 text-right font-mono font-medium ${pnlColor(h.today_pnl)}`}>
+                                                        {pnlSign(h.today_pnl)}{fmt(h.today_pnl)}
+                                                    </td>
+                                                    <td className="py-4 text-right font-mono text-slate-200">
+                                                        {fmt(h.market_value)}
+                                                    </td>
+                                                    <td className={`py-4 text-right font-mono font-bold ${pnlColor(h.unrealized_pnl)}`}>
+                                                        <div>{pnlSign(h.unrealized_pnl)}{fmt(h.unrealized_pnl)}</div>
+                                                        <div className="text-xs opacity-80">{pnlSign(h.unrealized_pct)}{h.unrealized_pct?.toFixed(2)}%</div>
+                                                    </td>
+                                                    <td className="py-4 text-center pr-2">
+                                                        <div className="flex justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                            <button 
+                                                                onClick={() => handleEditClick(h)}
+                                                                className="p-1.5 text-slate-400 hover:text-accentLight hover:bg-accent/10 rounded-lg transition-colors inline-block focus:outline-none"
+                                                                title={`編輯 ${h.symbol}`}
+                                                            >
+                                                                <Icons.Pencil />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeleteStock(h.symbol)}
+                                                                className="p-1.5 text-slate-400 hover:text-bearish hover:bg-bearish/10 rounded-lg transition-colors inline-block focus:outline-none"
+                                                                title={`刪除 ${h.symbol}`}
+                                                            >
+                                                                <Icons.Trash />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Column: Charts & News */}
+                        <div className="flex flex-col gap-6">
+
+                            {/* Chart */}
+                            <div className="glass-card rounded-xl p-6 flex flex-col h-[350px]">
+                                <h2 className="text-lg font-bold mb-2">持股資產分佈</h2>
+                                <div className="flex-1 -ml-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={pieData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={90}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {pieData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                formatter={(val) => '$' + fmt(val)}
+                                                contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                                itemStyle={{ color: '#fff' }}
+                                            />
+                                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {/* News Feed */}
+                            <div className="glass-card rounded-xl p-6 flex-1">
+                                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <Icons.Newspaper /> 即時重點新聞
+                                </h2>
+                                {top_news && top_news.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {top_news.map((n, i) => (
+                                            <a key={i} href={n.url} target="_blank" rel="noopener noreferrer" className={`block p-4 rounded-lg border transition-all ${n.is_bearish ? 'bg-bearish/5 border-bearish/30 hover:border-bearish/60' : 'bg-white/[0.02] border-glassBorder hover:border-accentLight/50 hover:bg-white/[0.04]'}`}>
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${n.is_bearish ? 'bg-bearish/20 text-bearish' : 'bg-accent/20 text-accentLight'}`}>
+                                                        {n.rank}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-medium line-clamp-3 leading-snug mb-2">
+                                                            {n.title}
+                                                            {n.is_bearish && <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-bearish/20 text-bearish align-middle">利空</span>}
+                                                        </h3>
+                                                        <div className="text-xs text-slate-500 font-mono">
+                                                            {n.source} · {new Date(n.published).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-slate-500 py-8 text-sm">暫無最新新聞</div>
+                                )}
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
