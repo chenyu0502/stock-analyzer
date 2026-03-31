@@ -171,7 +171,7 @@ def get_news(quotes: List[Dict[str, Any]], top_n: int = 5) -> List[Dict[str, Any
 
 # ── 主界面 ───────────────────────────────────────────────────
 def main():
-    st.title("📊 Antigravity Dashboard")
+    st.title("📊 持股收益總覽")
     st.caption(f"最後分析時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     # 1. 載入資料
