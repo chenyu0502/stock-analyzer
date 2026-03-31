@@ -98,7 +98,9 @@ function renderHoldings(holdings) {
       upPctCell = `<span class="${upClass}">${pnlSign(h.unrealized_pct)}${h.unrealized_pct.toFixed(2)}%</span>`;
     }
 
-    const shares = (h.shares / 1000).toFixed(h.shares % 1000 === 0 ? 0 : 1);
+    const sharesDisp = (h.shares / 1000).toFixed(h.shares % 1000 === 0 ? 0 : 1);
+    const sharesVal = h.shares || 0;
+    const priceVal = h.entry_price || 0;
 
     const advice = h.action_advice || '觀察';
     const reason = h.advice_reason || '-';
@@ -112,7 +114,7 @@ function renderHoldings(holdings) {
       <td class="num">${fmtPrice(h.current_price)}</td>
       <td class="num">${chgCell}</td>
       <td class="num">${todayCell}</td>
-      <td class="num">${shares}</td>
+      <td class="num">${sharesDisp}</td>
       <td class="num">${h.market_value != null ? fmt(h.market_value) : '<span class="na-text">N/A</span>'}</td>
       <td class="num">${upCell}</td>
       <td class="num">${upPctCell}</td>
@@ -120,6 +122,16 @@ function renderHoldings(holdings) {
         <div class="advice-cell">
           <span class="advice-tag ${advClass}">${advice}</span>
           <span class="advice-reason">${reason}</span>
+        </div>
+      </td>
+      <td>
+        <div class="action-btns">
+          <button class="action-btn" title="編輯" onclick="handleEditStock('${h.symbol}', ${sharesVal}, ${priceVal})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+          </button>
+          <button class="action-btn delete" title="刪除" onclick="handleDeleteStock('${h.symbol}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
         </div>
       </td>
     </tr>`;
@@ -153,6 +165,98 @@ function renderNews(news) {
         </div>
       </div>`;
   }).join('');
+}
+
+/* ── Modal & Stock API ─────────────────────────────────────── */
+function openModal(symbol = '', shares = '', price = '') {
+  const modal = $('stockModal');
+  const title = $('modalTitle');
+  const form = $('stockForm');
+
+  title.innerText = symbol ? `編輯持股 - ${symbol}` : '新增股票持股';
+  $('formSymbol').value = symbol;
+  $('formSymbolOriginal').value = symbol;
+  $('formShares').value = shares;
+  $('formPrice').value = price;
+
+  // 如果是編輯模式，不允許修改代號
+  $('formSymbol').disabled = !!symbol;
+
+  modal.classList.add('show');
+}
+
+function closeModal() {
+  $('stockModal').classList.remove('show');
+  $('stockForm').reset();
+}
+
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const submitBtn = $('submitBtn');
+  const originalText = submitBtn.innerText;
+
+  const payload = {
+    symbol: $('formSymbol').value.trim().toUpperCase(),
+    shares: parseFloat($('formShares').value),
+    price: parseFloat($('formPrice').value)
+  };
+
+  if (!payload.symbol || isNaN(payload.shares) || isNaN(payload.price)) {
+    showToast('⚠️ 請填寫完整欄位', true);
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner-sm"></span> 儲存中...';
+
+  try {
+    const res = await fetch('/api/stocks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || '儲存失敗');
+    }
+
+    showToast('✅ 股票已成功儲存');
+    closeModal();
+    
+    // 立即重新整理數據
+    loadReport();
+  } catch (err) {
+    console.error('Stock Save Error:', err);
+    showToast(`❌ ${err.message}`, true);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerText = originalText;
+  }
+}
+
+async function handleDeleteStock(symbol) {
+  if (!confirm(`確定要刪除 ${symbol} 的持股紀錄嗎？`)) return;
+
+  try {
+    const res = await fetch('/api/stocks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol })
+    });
+
+    if (!res.ok) throw new Error('刪除失敗');
+
+    showToast(`🗑️ ${symbol} 已從持股中移除`);
+    loadReport();
+  } catch (err) {
+    console.error('Stock Delete Error:', err);
+    showToast(`❌ ${err.message}`, true);
+  }
+}
+
+function handleEditStock(symbol, shares, price) {
+  openModal(symbol, shares, price);
 }
 
 // ── 主載入函式 ────────────────────────────────────────────────
