@@ -1,12 +1,5 @@
-# 核心數據抓取與財經分析
-yfinance==1.2.0
-pandas>=2.0.0
-requests>=2.31.0
-
-# 網頁解析與背景任務
-beautifulsoup4>=4.12.0
-multitasking>=0.0.11
-
-# 時區與資料格式處理
-pytz
-frozendict
+streamlit
+yfinance
+pandas
+plotly
+requests
